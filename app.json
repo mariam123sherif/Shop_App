@@ -5,15 +5,21 @@
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
-    "userInterfaceStyle": "light",
-    "newArchEnabled": true,
+    "userInterfaceStyle": "automatic",
+    "newArchEnabled": false,
     "splash": {
       "image": "./assets/splash-icon.png",
       "resizeMode": "contain",
       "backgroundColor": "#ffffff"
     },
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.maryam.shopapp",
+      "infoPlist": {
+        "NSLocationWhenInUseUsageDescription": "ShopApp needs your location to find nearby stores.",
+        "NSCameraUsageDescription": "ShopApp needs camera access to scan barcodes and upload product photos.",
+        "NSPhotoLibraryUsageDescription": "ShopApp needs photo library access to upload product images."
+      }
     },
     "android": {
       "adaptiveIcon": {
@@ -21,10 +27,33 @@
         "backgroundColor": "#ffffff"
       },
       "edgeToEdgeEnabled": true,
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "package": "com.maryam.shopapp"
     },
     "web": {
       "favicon": "./assets/favicon.png"
-    }
+    },
+    "plugins": [
+      "expo-secure-store",
+      "expo-localization",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "ShopApp needs access to your photos to upload product images."
+        }
+      ],
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "ShopApp needs your location to find nearby stores."
+        }
+      ],
+      [
+        "expo-notifications",
+        {
+          "color": "#185FA5"
+        }
+      ]
+    ]
   }
 }
