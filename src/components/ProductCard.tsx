@@ -1,11 +1,23 @@
 import React from 'react';
-import { View, Text, Image, TouchableOpacity, StyleSheet, Dimensions } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { View, Text, TouchableOpacity, StyleSheet, Dimensions } from 'react-native';
 import { useTheme } from '../context/ThemeContext';
 import { Product } from '../types';
 
 const { width } = Dimensions.get('window');
 const CARD_WIDTH = (width - 36) / 2;
+
+const CATEGORY_STYLES: Record<string, { bg: string; darkBg: string; text: string; accent: string }> = {
+  Electronics: { bg: '#EEF2FF', darkBg: '#1E1B4B', text: '#4338CA', accent: '#6366F1' },
+  Sports:      { bg: '#F0FDF4', darkBg: '#052E16', text: '#166534', accent: '#22C55E' },
+  Home:        { bg: '#FFFBEB', darkBg: '#1C1107', text: '#92400E', accent: '#F59E0B' },
+  Clothing:    { bg: '#FDF4FF', darkBg: '#2E1065', text: '#7E22CE', accent: '#A855F7' },
+  Beauty:      { bg: '#FFF1F2', darkBg: '#4C0519', text: '#9F1239', accent: '#F43F5E' },
+  General:     { bg: '#F0F9FF', darkBg: '#0C1A2E', text: '#075985', accent: '#0EA5E9' },
+};
+
+function getCatStyle(cat: string) {
+  return CATEGORY_STYLES[cat] ?? CATEGORY_STYLES['General'];
+}
 
 interface Props {
   product: Product;
@@ -15,45 +27,53 @@ interface Props {
 }
 
 export default function ProductCard({ product, onAddToCart, onPress, formatPrice }: Props) {
-  const { colors } = useTheme();
-  const s = styles(colors);
+  const { colors, isDark } = useTheme();
+  const cat = getCatStyle(product.category);
+  const isOutOfStock = product.stock_quantity === 0;
+  const isLowStock = product.stock_quantity > 0 && product.stock_quantity <= 5;
 
   return (
-    <TouchableOpacity style={s.card} onPress={onPress} activeOpacity={0.9}>
-      {/* Image */}
-      <View style={s.imageBox}>
-        {product.image_url ? (
-          <Image source={{ uri: product.image_url }} style={s.image} resizeMode="cover" />
-        ) : (
-          <View style={s.imagePlaceholder}>
-            <Ionicons name="image-outline" size={48} color={colors.subtext} />
+    <TouchableOpacity
+      style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}
+      onPress={onPress}
+      activeOpacity={0.93}
+    >
+      {/* Colored image area */}
+      <View style={[styles.imageBox, { backgroundColor: isDark ? cat.darkBg : cat.bg }]}>
+        {/* Category pill */}
+        <View style={[styles.catPill, { backgroundColor: cat.accent + '25' }]}>
+          <Text style={[styles.catPillText, { color: cat.accent }]}>{product.category}</Text>
+        </View>
+
+        {/* Product name as visual */}
+        <Text style={[styles.productLabel, { color: isDark ? '#fff' : cat.text }]} numberOfLines={2}>
+          {product.name.split(' ').slice(0, 2).join('\n')}
+        </Text>
+
+        {/* Stock status badges */}
+        {isOutOfStock && (
+          <View style={styles.outBadge}>
+            <Text style={styles.badgeText}>Out of stock</Text>
           </View>
         )}
-        {product.stock_quantity === 0 && (
-          <View style={s.outOfStock}>
-            <Text style={s.outOfStockText}>Out of stock</Text>
-          </View>
-        )}
-        {product.stock_quantity > 0 && product.stock_quantity <= 5 && (
-          <View style={s.lowStock}>
-            <Ionicons name="warning" size={12} color="#fff" style={{ marginRight: 4 }} />
-            <Text style={s.lowStockText}>Only {product.stock_quantity} left!</Text>
+        {isLowStock && (
+          <View style={[styles.lowBadge, { backgroundColor: cat.accent }]}>
+            <Text style={styles.badgeText}>Only {product.stock_quantity} left!</Text>
           </View>
         )}
       </View>
 
-      {/* Info */}
-      <View style={s.info}>
-        <Text style={s.category}>{product.category}</Text>
-        <Text style={s.name} numberOfLines={2}>{product.name}</Text>
-        <View style={s.footer}>
-          <Text style={s.price}>{formatPrice(product.price)}</Text>
+      {/* Bottom info */}
+      <View style={styles.info}>
+        <Text style={[styles.name, { color: colors.text }]} numberOfLines={2}>{product.name}</Text>
+        <View style={styles.footer}>
+          <Text style={[styles.price, { color: cat.accent }]}>{formatPrice(product.price)}</Text>
           <TouchableOpacity
-            style={[s.addBtn, product.stock_quantity === 0 && s.addBtnDisabled]}
+            style={[styles.addBtn, { backgroundColor: isOutOfStock ? colors.border : cat.accent }]}
             onPress={onAddToCart}
-            disabled={product.stock_quantity === 0}
+            disabled={isOutOfStock}
           >
-            <Ionicons name="add" size={20} color={product.stock_quantity === 0 ? colors.border : '#fff'} />
+            <Text style={styles.addBtnText}>+</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -61,58 +81,63 @@ export default function ProductCard({ product, onAddToCart, onPress, formatPrice
   );
 }
 
-const styles = (colors: any) => StyleSheet.create({
+const styles = StyleSheet.create({
   card: {
     width: CARD_WIDTH,
-    backgroundColor: colors.card,
-    borderRadius: 16,
+    borderRadius: 20,
     overflow: 'hidden',
     borderWidth: 1,
-    borderColor: colors.border,
   },
-  imageBox: { position: 'relative' },
-  image: { width: '100%', height: 130 },
-  imagePlaceholder: {
-    width: '100%',
-    height: 130,
-    backgroundColor: colors.inputBg,
-    alignItems: 'center',
-    justifyContent: 'center',
+  imageBox: {
+    height: 150,
+    padding: 12,
+    position: 'relative',
+    justifyContent: 'flex-end',
   },
-  outOfStock: {
+  catPill: {
     position: 'absolute',
-    top: 8,
-    left: 8,
-    backgroundColor: colors.danger,
-    borderRadius: 6,
+    top: 10,
+    left: 10,
+    borderRadius: 20,
     paddingHorizontal: 8,
     paddingVertical: 3,
   },
-  outOfStockText: { color: '#fff', fontSize: 10, fontWeight: '700' },
-  lowStock: {
-    position: 'absolute',
-    top: 8,
-    left: 8,
-    backgroundColor: '#F59E0B',
-    borderRadius: 6,
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    flexDirection: 'row',
-    alignItems: 'center',
+  catPillText: { fontSize: 10, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.5 },
+  productLabel: {
+    fontSize: 20,
+    fontWeight: '800',
+    letterSpacing: -0.5,
+    lineHeight: 24,
+    marginBottom: 4,
   },
-  lowStockText: { color: '#fff', fontSize: 10, fontWeight: '700' },
-  info: { padding: 10 },
-  category: { fontSize: 10, fontWeight: '600', color: colors.subtext, textTransform: 'uppercase', marginBottom: 4 },
-  name: { fontSize: 13, fontWeight: '600', color: colors.text, marginBottom: 8, lineHeight: 18 },
-  footer: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  price: { fontSize: 14, fontWeight: '800', color: colors.primary },
-  addBtn: {
-    width: 28,
-    height: 28,
+  outBadge: {
+    position: 'absolute',
+    bottom: 10,
+    right: 10,
+    backgroundColor: '#EF4444',
     borderRadius: 8,
-    backgroundColor: colors.primary,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+  },
+  lowBadge: {
+    position: 'absolute',
+    bottom: 10,
+    right: 10,
+    borderRadius: 8,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+  },
+  badgeText: { color: '#fff', fontSize: 10, fontWeight: '700' },
+  info: { padding: 12, paddingTop: 10 },
+  name: { fontSize: 13, fontWeight: '600', lineHeight: 18, marginBottom: 10 },
+  footer: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  price: { fontSize: 15, fontWeight: '800' },
+  addBtn: {
+    width: 32,
+    height: 32,
+    borderRadius: 10,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  addBtnDisabled: { backgroundColor: colors.border },
+  addBtnText: { color: '#fff', fontSize: 22, fontWeight: '700', lineHeight: 26 },
 });
