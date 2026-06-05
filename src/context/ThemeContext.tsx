@@ -2,73 +2,83 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useColorScheme } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-type Theme = 'light' | 'dark';
+export type ThemeMode = 'system' | 'light' | 'dark';
 
-interface ThemeContextType {
-  theme: Theme;
-  isDark: boolean;
-  toggleTheme: () => void;
-  colors: typeof lightColors;
-}
+const THEME_KEY = 'user_theme_preference';
 
 const lightColors = {
-  background: '#F8F9FA',
-  card: '#FFFFFF',
-  text: '#1A1A2E',
-  subtext: '#6B7280',
-  primary: '#185FA5',
+  primary:      '#185FA5',
   primaryLight: '#E6F1FB',
-  border: '#E5E7EB',
-  success: '#1D9E75',
-  danger: '#E24B4A',
-  warning: '#BA7517',
-  inputBg: '#F3F4F6',
-  tabBar: '#FFFFFF',
-  overlay: 'rgba(0,0,0,0.5)',
+  background:   '#F5F7FA',
+  card:         '#FFFFFF',
+  text:         '#111827',
+  subtext:      '#6B7280',
+  inputBg:      '#F3F4F6',
+  border:       '#E5E7EB',
+  tabBar:       '#FFFFFF',
+  success:      '#1D9E75',
+  danger:       '#EF4444',
 };
 
 const darkColors = {
-  background: '#0F0F1A',
-  card: '#1A1A2E',
-  text: '#F1F5F9',
-  subtext: '#94A3B8',
-  primary: '#3B82F6',
-  primaryLight: '#1E3A5F',
-  border: '#2D2D44',
-  success: '#22C55E',
-  danger: '#EF4444',
-  warning: '#F59E0B',
-  inputBg: '#252540',
-  tabBar: '#1A1A2E',
-  overlay: 'rgba(0,0,0,0.7)',
+  primary:      '#4A9FE0',
+  primaryLight: '#1A2D40',
+  background:   '#0F1117',
+  card:         '#1C1F26',
+  text:         '#F3F4F6',
+  subtext:      '#9CA3AF',
+  inputBg:      '#252830',
+  border:       '#2E3340',
+  tabBar:       '#1C1F26',
+  success:      '#34D399',
+  danger:       '#F87171',
 };
 
-const ThemeContext = createContext<ThemeContextType>({} as ThemeContextType);
+interface ThemeContextType {
+  isDark: boolean;
+  colors: typeof lightColors;
+  themeMode: ThemeMode;
+  setThemeMode: (mode: ThemeMode) => void;
+}
 
-export const ThemeProvider = ({ children }: { children: React.ReactNode }) => {
+const ThemeContext = createContext<ThemeContextType>({
+  isDark: false,
+  colors: lightColors,
+  themeMode: 'system',
+  setThemeMode: () => {},
+});
+
+export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const systemScheme = useColorScheme();
-  const [theme, setTheme] = useState<Theme>(systemScheme ?? 'light');
+  const [themeMode, setThemeModeState] = useState<ThemeMode>('system');
 
+  // Load saved preference on mount
   useEffect(() => {
-    AsyncStorage.getItem('theme_preference').then((saved) => {
-      if (saved === 'light' || saved === 'dark') setTheme(saved);
+    AsyncStorage.getItem(THEME_KEY).then((saved) => {
+      if (saved === 'light' || saved === 'dark' || saved === 'system') {
+        setThemeModeState(saved);
+      }
     });
   }, []);
 
-  const toggleTheme = async () => {
-    const next = theme === 'light' ? 'dark' : 'light';
-    setTheme(next);
-    await AsyncStorage.setItem('theme_preference', next);
+  const setThemeMode = async (mode: ThemeMode) => {
+    setThemeModeState(mode);
+    await AsyncStorage.setItem(THEME_KEY, mode);
   };
 
-  const isDark = theme === 'dark';
+  const isDark =
+    themeMode === 'dark' ||
+    (themeMode === 'system' && systemScheme === 'dark');
+
   const colors = isDark ? darkColors : lightColors;
 
   return (
-    <ThemeContext.Provider value={{ theme, isDark, toggleTheme, colors }}>
+    <ThemeContext.Provider value={{ isDark, colors, themeMode, setThemeMode }}>
       {children}
     </ThemeContext.Provider>
   );
-};
+}
 
-export const useTheme = () => useContext(ThemeContext);
+export function useTheme() {
+  return useContext(ThemeContext);
+}

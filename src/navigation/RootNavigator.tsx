@@ -26,15 +26,16 @@ const Tab = createBottomTabNavigator();
 
 function TabIcon({ iconName, label, focused, colors }: any) {
   return (
-    <View style={{ alignItems: "center", gap: 2 }}>
+    <View style={{ alignItems: "center", gap: 2, width: 60 }}>
       <Ionicons
         name={iconName}
         size={24}
         color={focused ? colors.primary : colors.subtext}
       />
       <Text
+        numberOfLines={1}
         style={{
-          fontSize: 10,
+          fontSize: 9,
           color: focused ? colors.primary : colors.subtext,
           fontWeight: focused ? "600" : "400",
         }}
@@ -45,6 +46,7 @@ function TabIcon({ iconName, label, focused, colors }: any) {
   );
 }
 
+// ── Bottom tabs: Home | Cart | Alerts | Profile ─────────────────────────────
 function MainTabs() {
   const { colors } = useTheme();
   const itemCount = useCartStore((s) => s.itemCount());
@@ -102,28 +104,12 @@ function MainTabs() {
                     justifyContent: "center",
                   }}
                 >
-                  <Text
-                    style={{ color: "#fff", fontSize: 10, fontWeight: "700" }}
-                  >
+                  <Text style={{ color: "#fff", fontSize: 10, fontWeight: "700" }}>
                     {itemCount}
                   </Text>
                 </View>
               )}
             </View>
-          ),
-        }}
-      />
-      <Tab.Screen
-        name="Stores"
-        component={StoreLocatorScreen}
-        options={{
-          tabBarIcon: ({ focused }) => (
-            <TabIcon
-              iconName={focused ? "location" : "location-outline"}
-              label="Stores"
-              focused={focused}
-              colors={colors}
-            />
           ),
         }}
       />
@@ -170,16 +156,8 @@ function AuthStack() {
         contentStyle: { backgroundColor: colors.background },
       }}
     >
-      <Stack.Screen
-        name="Login"
-        component={LoginScreen}
-        options={{ headerShown: false }}
-      />
-      <Stack.Screen
-        name="Register"
-        component={RegisterScreen}
-        options={{ headerShown: false }}
-      />
+      <Stack.Screen name="Login" component={LoginScreen} options={{ headerShown: false }} />
+      <Stack.Screen name="Register" component={RegisterScreen} options={{ headerShown: false }} />
     </Stack.Navigator>
   );
 }
@@ -195,31 +173,13 @@ function AppStack() {
         contentStyle: { backgroundColor: colors.background },
       }}
     >
-      <Stack.Screen
-        name="MainTabs"
-        component={MainTabs}
-        options={{ headerShown: false }}
-      />
-      <Stack.Screen
-        name="ProductDetail"
-        component={ProductDetailScreen}
-        options={{ title: "Product Detail", headerBackTitle: "Back" }}
-      />
-      <Stack.Screen
-        name="BarcodeScanner"
-        component={BarcodeScannerScreen}
-        options={{ title: "Scan Barcode", presentation: "modal" }}
-      />
-      <Stack.Screen
-        name="Orders"
-        component={OrderHistoryScreen}
-        options={{ title: "Order History" }}
-      />
-      <Stack.Screen
-        name="Wishlist"
-        component={WishlistScreen}
-        options={{ title: "My Wishlist" }}
-      />
+      <Stack.Screen name="MainTabs" component={MainTabs} options={{ headerShown: false }} />
+      <Stack.Screen name="ProductDetail" component={ProductDetailScreen} options={{ title: "Product Detail", headerBackTitle: "Back" }} />
+      <Stack.Screen name="BarcodeScanner" component={BarcodeScannerScreen} options={{ title: "Scan Barcode", presentation: "modal" }} />
+      {/* Stores accessible from HomeScreen header & ProductDetail — NOT in tab bar */}
+      <Stack.Screen name="Stores" component={StoreLocatorScreen} options={{ title: "Store Locator" }} />
+      <Stack.Screen name="Orders" component={OrderHistoryScreen} options={{ title: "Order History" }} />
+      <Stack.Screen name="Wishlist" component={WishlistScreen} options={{ title: "My Wishlist" }} />
     </Stack.Navigator>
   );
 }
@@ -230,14 +190,7 @@ export default function RootNavigator() {
 
   if (loading) {
     return (
-      <View
-        style={{
-          flex: 1,
-          backgroundColor: colors.background,
-          alignItems: "center",
-          justifyContent: "center",
-        }}
-      >
+      <View style={{ flex: 1, backgroundColor: colors.background, alignItems: "center", justifyContent: "center" }}>
         <Ionicons name="bag" size={48} color={colors.primary} />
       </View>
     );

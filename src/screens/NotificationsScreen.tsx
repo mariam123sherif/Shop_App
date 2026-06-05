@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, FlatList, StyleSheet, TouchableOpacity, Platform } from 'react-native';
+import { View, Text, FlatList, StyleSheet, TouchableOpacity, Platform, Alert } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import * as Notifications from 'expo-notifications';
 import { useTheme } from '../context/ThemeContext';
@@ -52,6 +52,33 @@ export default function NotificationsScreen() {
   useEffect(() => {
     if (user) registerForPushNotifications(user.id);
   }, [user]);
+
+  // Send a promo push to all users via Expo Push API
+  const sendPromoNotification = async () => {
+    try {
+      const { data: tokens } = await supabase.from('push_tokens').select('token');
+      if (!tokens || tokens.length === 0) {
+        Alert.alert('No devices', 'No registered push tokens found.');
+        return;
+      }
+      await fetch('https://exp.host/--/api/v2/push/send', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(
+          tokens.map((t) => ({
+            to: t.token,
+            title: '🔥 Flash Sale — 30% OFF!',
+            body: 'Limited time offer on Electronics. Shop now before it ends!',
+            data: { type: 'promo' },
+            sound: 'default',
+          }))
+        ),
+      });
+      Alert.alert('Sent!', 'Promotional notification sent to all users.');
+    } catch (err) {
+      Alert.alert('Error', 'Failed to send notification.');
+    }
+  };
 
   // Send a test notification
   const sendTestNotification = async () => {
@@ -106,10 +133,16 @@ export default function NotificationsScreen() {
           </TouchableOpacity>
         )}
         ListFooterComponent={
-          <TouchableOpacity style={s.testBtn} onPress={sendTestNotification}>
-            <Ionicons name="notifications" size={16} color={colors.text} style={{ marginRight: 8 }} />
-            <Text style={s.testBtnText}>Send Test Notification</Text>
-          </TouchableOpacity>
+          <View style={{ gap: 10, marginTop: 8 }}>
+            <TouchableOpacity style={s.testBtn} onPress={sendTestNotification}>
+              <Ionicons name="notifications" size={16} color={colors.text} style={{ marginRight: 8 }} />
+              <Text style={s.testBtnText}>Send Test Notification</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={[s.testBtn, { backgroundColor: colors.primary + '15', borderColor: colors.primary + '40' }]} onPress={sendPromoNotification}>
+              <Ionicons name="pricetag" size={16} color={colors.primary} style={{ marginRight: 8 }} />
+              <Text style={[s.testBtnText, { color: colors.primary }]}>Send Promo to All Users</Text>
+            </TouchableOpacity>
+          </View>
         }
       />
     </View>

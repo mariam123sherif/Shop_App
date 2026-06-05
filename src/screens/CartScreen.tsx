@@ -7,6 +7,7 @@ import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import * as Print from 'expo-print';
 import * as Sharing from 'expo-sharing';
+import * as Notifications from 'expo-notifications';
 import { useTheme } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext';
 import { useCartStore } from '../store/cartStore';
@@ -23,6 +24,48 @@ export default function CartScreen({ navigation }: any) {
   const shipping = subtotal > 0 ? 4.99 : 0;
   const discount = subtotal > 100 ? 10 : 0;
   const grandTotal = subtotal + shipping - discount;
+
+  const sendOrderNotification = async (orderId: string) => {
+    try {
+      // Local immediate notification
+      await Notifications.scheduleNotificationAsync({
+        content: {
+          title: '✅ Order Confirmed!',
+          body: `Order #${orderId.slice(0, 8).toUpperCase()} placed successfully. Total: $${grandTotal.toFixed(2)}`,
+          data: { type: 'order', orderId },
+          sound: true,
+        },
+        trigger: null, // fire immediately
+      });
+
+      // Also send via Expo Push API to all user's devices
+      if (user) {
+        const { data: tokens } = await supabase
+          .from('push_tokens')
+          .select('token')
+          .eq('user_id', user.id);
+
+        if (tokens && tokens.length > 0) {
+          await fetch('https://exp.host/--/api/v2/push/send', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(
+              tokens.map((t) => ({
+                to: t.token,
+                title: '✅ Order Confirmed!',
+                body: `Order #${orderId.slice(0, 8).toUpperCase()} — $${grandTotal.toFixed(2)}. We're preparing your items!`,
+                data: { type: 'order', orderId },
+                sound: 'default',
+                badge: 1,
+              }))
+            ),
+          });
+        }
+      }
+    } catch (err) {
+      console.log('Push notification error:', err);
+    }
+  };
 
   // Feature 10 - Secure checkout
   const handleCheckout = async () => {
@@ -45,6 +88,8 @@ export default function CartScreen({ navigation }: any) {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       setOrderPlaced(data.id);
       clearCart();
+      // Send push notification
+      await sendOrderNotification(data.id);
       // Feature 9 - Generate PDF receipt
       await generateReceipt(data.id);
     }
